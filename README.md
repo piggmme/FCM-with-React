@@ -1,70 +1,119 @@
-# Getting Started with Create React App
+# CRA + FCM 예제
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+## 1 초기 설정
 
-## Available Scripts
+### 1.1 CRA 설치
 
-In the project directory, you can run:
+```
+npx create-react-app test-messaging
+```
 
-### `npm start`
+### 1.2.1 firebase 설치
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+```
+npm install firebase
+```
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+### 1.2.2 firebase 콘솔에서 프로젝트 생성
 
-### `npm test`
+1. 콘솔에 접속
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+https://console.firebase.google.com/u/0/?hl=ko
 
-### `npm run build`
+2. 프로젝트 생성
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+3. 웹 앱에 Firebase 추가
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+4. firebase SDK 추가 (firebaseConfig)
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+## 2 firebase 메서드
 
-### `npm run eject`
+### 2.1 자바스크립트 클라이언트 초기 설정
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+https://firebase.google.com/docs/cloud-messaging/js/client
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+```js
+import { initializeApp } from "firebase/app";
+import { getMessaging } from "firebase/messaging";
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+const firebaseConfig = {
+  // 1.2.2 에서 얻은 firebaseConfig를 여기에 추가
+};
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+const app = initializeApp(firebaseConfig);
+const messaging = getMessaging(app);
+```
 
-## Learn More
+### 2.2 VAPID 키 자격 증명 설정
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
+1. firebase 콘솔 접속
 
-To learn React, check out the [React documentation](https://reactjs.org/).
+2. 프로젝트 개요 옆 관리 버튼 > 프로젝트 설정 > 클라우드 메시징
 
-### Code Splitting
+3. 웹 푸시 인증서 생성
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
+4. 생성된 키는 `getToken` 메서드의 `vapidKey` 값으로 추가
 
-### Analyzing the Bundle Size
+### 2.3 앱에서 웹 자격 증명 구성
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
+2.2 에서 발급 받은 키를 `vapidKey` 로 추가한다.
 
-### Making a Progressive Web App
+```js
+const messaging = getMessaging(app);
+const vapidKey = "2.2 에서 발급 받은 키";
+messaging.getToken({ vapidKey });
+```
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
+### 2.4 등록된 토큰에 접근
 
-### Advanced Configuration
+https://firebase.google.com/docs/cloud-messaging/js/client#access_the_registration_token
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
+앱 내에서 사용자에게 먼저 알림 권한을 요청해야 한다.
+알림 권한이 허용된 경우에 토큰을 받아 메시지를 얻도록 한다.
 
-### Deployment
+```js
+function requestPermission() {
+  console.log("권한 요청 중...");
+  Notification.requestPermission().then((permission) => {
+    if (permission === "granted") {
+      console.log("알림 권한이 허용됨");
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
+      // FCM 메세지 처리
+    } else {
+      console.log("알림 권한 허용 안됨");
+    }
+  });
+}
+```
 
-### `npm run build` fails to minify
+### 2.5 Service Worker 설정 - `public/firebase-message-sw.js` 파일 생성
 
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+https://github.com/firebase/quickstart-js/issues/229
+
+```
+Service worker registration failed, error: DOMException: Failed to register a ServiceWorker for scope ('http://localhost:3000/') with script ('http://localhost:3000/firebase-messaging-sw.js'): The script has an unsupported MIME type ('text/html').
+```
+
+Service Worker 설정을 해야 백그라운드 환경일때도 알림을 받을 수 있다.`public` 폴더에 `firebase-message-sw.js`를 생성하고, 다음과 같은 코드를 입력하면 된다. 반드시 파일 이름은 `firebase-message-sw.js` 이여야한다.
+
+```js
+// firebase-message-sw.js
+importScripts("https://www.gstatic.com/firebasejs/8.7.1/firebase-app.js");
+importScripts("https://www.gstatic.com/firebasejs/8.7.1/firebase-messaging.js");
+
+firebase.initializeApp({
+  // 1.2.2 에서 얻은 firebaseConfig를 여기에 추가
+});
+
+const messaging = firebase.messaging();
+```
+
+### 2.6 firebase 콘솔 > 클라우드 메세징
+
+1. 첫 번째 캠페인 만들기 버튼 클릭 > firebase 알림 메세지
+
+2. 메시지 작성
+
+3. 테스트 메시지 전송
+
+4. Web Push 알람을 확인할 수 있음
