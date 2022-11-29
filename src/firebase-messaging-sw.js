@@ -35,7 +35,16 @@ function requestPermission() {
 
       onMessage(messaging, (payload) => {
         console.log("메시지가 도착했습니다.", payload);
-        // ...
+        const notificationPayload = payload.notification;
+        const title = notificationPayload.title;
+        const options = {
+          icon: notificationPayload.image,
+          requireInteraction: true,
+          ...notificationPayload,
+        };
+        navigator.serviceWorker.ready.then((registration) => {
+          registration.showNotification(title, options);
+        });
       });
     } else {
       console.log("알림 권한 허용 안됨");
