@@ -38,6 +38,13 @@ import { getMessaging } from "firebase/messaging";
 
 const firebaseConfig = {
   // 1.2.2 에서 얻은 firebaseConfig를 여기에 추가
+  apiKey: process.env.REACT_APP_API_KEY,
+  authDomain: <your-authDomain>,
+  projectId: <your-projectId>,
+  storageBucket: <your-storageBucket>,
+  messagingSenderId: process.env.REACT_APP_MESSAGING_SENDER_ID,
+  appId: process.env.REACT_APP_APP_ID,
+  measurementId: process.env.REACT_APP_MEASUREMENT_ID,
 };
 
 const app = initializeApp(firebaseConfig);
@@ -54,14 +61,28 @@ const messaging = getMessaging(app);
 
 4. 생성된 키는 `getToken` 메서드의 `vapidKey` 값으로 추가
 
+### 2.2.1 생성 받은 config & key 를 환경변수로 등록
+
+`.env` 파일을 루트에 생성하고 하단을 채워주세요.
+
+```
+# .env
+REACT_APP_API_KEY=
+REACT_APP_MESSAGING_SENDER_ID=
+REACT_APP_APP_ID=
+REACT_APP_MEASUREMENT_ID=
+REACT_APP_VAPID_KEY=
+```
+
 ### 2.3 앱에서 웹 자격 증명 구성
 
 2.2 에서 발급 받은 키를 `vapidKey` 로 추가한다.
 
 ```js
-const messaging = getMessaging(app);
-const vapidKey = "2.2 에서 발급 받은 키";
-messaging.getToken({ vapidKey });
+import { getToken } from "firebase/messaging";
+const token = await getToken(messaging, {
+  vapidKey: process.env.REACT_APP_VAPID_KEY,
+});
 ```
 
 ### 2.4 웹 푸시 권한 요청
