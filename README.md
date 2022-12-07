@@ -64,7 +64,7 @@ const vapidKey = "2.2 에서 발급 받은 키";
 messaging.getToken({ vapidKey });
 ```
 
-### 2.4 등록된 토큰에 접근
+### 2.4 웹 푸시 권한 요청
 
 https://firebase.google.com/docs/cloud-messaging/js/client#access_the_registration_token
 
@@ -95,18 +95,6 @@ Service worker registration failed, error: DOMException: Failed to register a Se
 ```
 
 Service Worker 설정을 해야 백그라운드 환경일때도 알림을 받을 수 있다.`public` 폴더에 `firebase-message-sw.js`를 생성하고, 다음과 같은 코드를 입력하면 된다. 반드시 파일 이름은 `firebase-message-sw.js` 이여야한다.
-
-```js
-// firebase-message-sw.js
-importScripts("https://www.gstatic.com/firebasejs/8.7.1/firebase-app.js");
-importScripts("https://www.gstatic.com/firebasejs/8.7.1/firebase-messaging.js");
-
-firebase.initializeApp({
-  // 1.2.2 에서 얻은 firebaseConfig를 여기에 추가
-});
-
-const messaging = firebase.messaging();
-```
 
 ### 2.6 firebase 콘솔 > 클라우드 메세징
 
